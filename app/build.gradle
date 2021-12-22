@@ -90,6 +90,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    implementation 'com.google.code.gson:gson:2.8.6'
     // HTTP client.
     def retrofitVersion = "2.9.0"
     def okhttpVersion = '4.9.0'
@@ -142,5 +143,5 @@ dependencies {
     implementation "androidx.hilt:hilt-navigation-fragment:1.0.0"
 
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.1.0"
-    
+
 }
