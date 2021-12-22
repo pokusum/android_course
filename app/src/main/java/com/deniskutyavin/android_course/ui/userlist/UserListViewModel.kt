@@ -1,48 +1,81 @@
 package com.deniskutyavin.android_course.ui.userlist
 
 import androidx.lifecycle.viewModelScope
+import androidx.viewbinding.BuildConfig
 import com.deniskutyavin.android_course.data.network.Api
-import com.deniskutyavin.android_course.ui.base.BaseViewModel
+import com.deniskutyavin.android_course.data.network.MockApi
+import com.deniskutyavin.android_course.data.network.response.error.GetUsersErrorResponce
 import com.deniskutyavin.android_course.entity.User
-import com.google.android.exoplayer2.util.Log
+import com.deniskutyavin.android_course.interactor.UserListInteractor
+import com.deniskutyavin.android_course.ui.base.BaseViewModel
+import com.haroldadmin.cnradapter.NetworkResponse
 import com.squareup.moshi.Moshi
-import kotlinx.coroutines.Dispatchers
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import timber.log.Timber
+import javax.inject.Inject
 
-class UserListViewModel : BaseViewModel() {
+@HiltViewModel
+class UserListViewModel @Inject constructor(
+    private val userListInteractor: UserListInteractor
+) : BaseViewModel() {
 
-    sealed class ViewState {
-        object Loading : ViewState()
-        data class Data(val userList: List<User>) : ViewState()
+    sealed class LoadUsersActionState {
+        object Loading : LoadUsersActionState()
+        data class Data(val userList: List<User>) : LoadUsersActionState()
+        data class ServerError(val e: NetworkResponse.ServerError<GetUsersErrorResponce>) : LoadUsersActionState()
+        data class NetworkError(val e: NetworkResponse.NetworkError) : LoadUsersActionState()
+        data class UnknownError(val e: NetworkResponse.UnknownError) : LoadUsersActionState()
     }
-    private val _viewState = MutableStateFlow<ViewState>(ViewState.Loading)
-    val viewState: Flow<ViewState> get() = _viewState.asStateFlow()
+    private val _loadUsersActionState = MutableStateFlow<LoadUsersActionState>(LoadUsersActionState.Loading)
+    val loadUsersActionState: Flow<LoadUsersActionState> get() = _loadUsersActionState.asStateFlow()
 
     init {
         viewModelScope.launch {
-            _viewState.emit(ViewState.Loading)
-            val users = loadUsers()
-            _viewState.emit(ViewState.Data(users))
+            _loadUsersActionState.emit(LoadUsersActionState.Loading)
+            lateinit var users : List<User>
+            try {
+                when (val response = userListInteractor.getUsers()) {
+                    is NetworkResponse.Success -> {
+                        users = response.body
+                    }
+                    is NetworkResponse.ServerError -> {
+                        _loadUsersActionState.emit(LoadUsersActionState.ServerError(response))
+                    }
+                    is NetworkResponse.NetworkError -> {
+                        _loadUsersActionState.emit(LoadUsersActionState.NetworkError(response))
+                    }
+                    is NetworkResponse.UnknownError -> {
+                        _loadUsersActionState.emit(LoadUsersActionState.UnknownError(response))
+                    }
+                }
+            } catch (error: Throwable) {
+                Timber.e(error)
+                _loadUsersActionState.emit(
+                    LoadUsersActionState.UnknownError(
+                        NetworkResponse.UnknownError(
+                            error
+                        )
+                    )
+                )
+            }
+            _loadUsersActionState.emit(LoadUsersActionState.Data(users))
         }
     }
 
-    private suspend fun loadUsers() : List<User> {
-        return withContext(Dispatchers.IO) {
-            Log.d(UserListFragment.LOG_TAG, "loadUsers()")
-            Thread.sleep(3000)
-            provideApi().getUsers().data
-        }
+private fun provideApi() : Api =
+    if (BuildConfig.DEBUG) {
+        MockApi()
     }
-
-    private fun provideApi(): Api {
-        return Retrofit.Builder()
+    else {
+        Retrofit
+            .Builder()
             .client(provideOkHttpClient())
             .baseUrl("https://reqres.in/api/")
             .addConverterFactory(MoshiConverterFactory.create(provideMoshi()))
@@ -50,11 +83,14 @@ class UserListViewModel : BaseViewModel() {
             .create(Api::class.java)
     }
 
-    private fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder().build()
-    }
+private fun provideOkHttpClient(): OkHttpClient {
+    return OkHttpClient
+        .Builder()
+        //.addInterceptor(AuthorizationInterceptor(AuthRepository()))
+        .build()
+}
 
-    private fun provideMoshi(): Moshi {
-        return Moshi.Builder().build()
-    }
+private fun provideMoshi(): Moshi {
+    return Moshi.Builder().build()
+}
 }

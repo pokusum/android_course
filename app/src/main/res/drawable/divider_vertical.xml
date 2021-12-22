@@ -4,6 +4,8 @@
     <size android:height="3dp"
         android:width="300dp"/>
     <gradient
-        android:angle="0"
-        android:centerColor="#000099" />
+        android:angle="00"
+        android:centerColor="#000099"
+        android:endColor="#005550"
+        android:startColor="#005550"  />
 </shape>
