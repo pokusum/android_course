@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 import by.kirich1409.viewbindingdelegate.viewBinding
 import kotlinx.coroutines.flow.collect
 
-class MainActivity : AppCompatActivity(R.layout.activity_main) {
+class MainActivity : AppCompatActivity() {
 
     companion object {
         val LOG_TAG = "MyAwesomeLogTag"
@@ -68,6 +68,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         val recyclerView = findViewById<RecyclerView>(R.id.usersRecyclersView)
         val adapter = UserAdapter()
         recyclerView.adapter = adapter
+        val divider = resources.getDrawable(R.drawable.divider_user_list, theme)
+        recyclerView.addItemDecoration(DividerUserList(divider))
         return adapter
     }
 
