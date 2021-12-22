@@ -19,7 +19,7 @@ import com.google.android.exoplayer2.util.Log
 
 class UserListFragment : BaseFragment(R.layout.fragment_user_list) {
     companion object {
-        val LOG_TAG = "MyFirstLogTag"
+        val LOG_TAG = "MyAwesomeLogTag"
     }
 
     private lateinit var viewModel: UserListViewModel
